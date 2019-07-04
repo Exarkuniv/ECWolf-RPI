@@ -56,8 +56,8 @@ function game_data_ecwolf() {
 }
 
 function configure_ecwolf() {
-    addPort "$md_id" "ecwolf-spear3d" "ECWolf - Spear3d" "$md_inst/ecwolf --data sdm "
-    addPort "$md_id" "ecwolf-wolf3d" "ECWolf - Wolf3d" "$md_inst/ecwolf --data wl1 "
+    addPort "$md_id" "ecwolf-spear3d" "ECWolf - Spear3d" "$md_inst/ecwolf --data sdm --file %ROM%"
+    addPort "$md_id" "ecwolf-wolf3d" "ECWolf - Wolf3d" "$md_inst/ecwolf --data wl1 --file %ROM%"
 
     mkRomDir "ports/wolf3d"
 
