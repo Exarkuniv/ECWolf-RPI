@@ -17,15 +17,20 @@ rp_module_section="exp"
 rp_module_flags=""
 
 function depends_ecwolf() {
-    getDepends g++ make cmake libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev mercurial zlib1g-dev libbz2-dev libjpeg-dev libgtk2.0-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev
+    getDepends libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev zlib1g-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev
 }
 
 function sources_ecwolf() {
-    hg clone https://bitbucket.org/ecwolf/ecwolf
+    downloadAndExtract "https://bitbucket.org/ecwolf/ecwolf/get/5065aaefe055.zip"
+    mv ecwolf-ecwolf-5065aaefe055 ecwolf
 }
 
 function build_ecwolf() {
     cd ecwolf
+    #### Patch: better use applyPatch??
+    wget -N -q https://raw.githubusercontent.com/crcerror/ECWolf-RPI/master/ecwolf_keyboardpatch.diff
+    patch -p0 -i ecwolf_keyboardpatch.diff
+    #### Patch: better use applyPatch??
     cmake . -DCMAKE_BUILD_TYPE=Release -DGPL=ON
     make
 }
@@ -38,31 +43,66 @@ function install_ecwolf() {
 }
 
 function game_data_ecwolf() {
-    pushd "$romdir/ports/wolf3d"
-    rename 'y/A-Z/a-z/' *
-    popd
-    if [[ ! -f "$romdir/ports/wolf3d/vswap.wl6" && ! -f "$romdir/ports/wolf3d/vswap.wl1" ]]; then
+    if [[ -z $(ls "$romdir/ports/wolf3d") ]]; then
         cd "$__tmpdir"
-        # Get shareware game data
-        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/wolf3d14.zip" "$romdir/ports/wolf3d" -j -LL
+        # Get shareware game data of Wolfenstein 3D and Spear of Destiny
+        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/wolf3d14.zip" "$romdir/ports/wolf3d"
+        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/soddemo.zip" "$romdir/ports/wolf3d"
     fi
-    if [[ ! -f "$romdir/ports/wolf3d/vswap.sdm" && ! -f "$romdir/ports/wolf3d/vswap.sod" ]]; then
-        cd "$__tmpdir"
-        # Get shareware game data
-        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/soddemo.zip" "$romdir/ports/wolf3d" -j -LL
-    fi
+}
 
-    chown -R $user:$user "$romdir/ports/wolf3d"
+function _add_games_ecwolf(){
+    local ecw_bin="$1"
+    local ext path game
+
+    declare -A games=(
+        ['wl1']="Wolfenstein 3D (demo)"
+        ['wl6']="Wolfenstein 3D"
+        ['sod']="Wolfenstein 3D - Spear of Destiny"
+        ['sd1']="Wolfenstein 3D - Spear of Destiny"
+        ['sdm']="Wolfenstein 3D - Spear of Destiny (demo)"
+        ['n3d']="Wolfenstein 3D - Super Noahâ€™s Ark 3D"
+        ['sd2']="Wolfenstein 3D - SoD MP2 - Return to Danger"
+        ['sd3']="Wolfenstein 3D - SoD MP3 - Ultimate Challenge"
+    )
+    
+    pushd "$romdir/ports/wolf3d" #Needed for the find command! Do not remove!
+    for game in "${!games[@]}"; do
+        ecw=$(find . -iname "*.$game" -print -quit)   #-print -quit finish after first hit
+        [[ -n "$ecw" ]] || continue                   # try next file extension
+        ext="${ecw##*.}"                              # Obtain extension in correct format
+        path="${ecw%/*}"; path="${path#*/}"
+
+        #Adding shell files
+        addPort "$md_id" "ecwolf" "${games[$game]}" "pushd $romdir/ports/wolf3d; bash %ROM%; popd" "$romdir/ports/wolf3d/${games[$game]}.ecwolf"
+        #Preparing .ecwolf files
+        _add_ecwolf_files_ecwolf "$romdir/ports/wolf3d/${games[$game]}.ecwolf" "$path" "$ext" "$ecw_bin"
+    done
+    popd
+}
+
+function _add_ecwolf_files_ecwolf() {
+cat >"$1" <<_EOF_
+cd "$2"
+"$4" --data $3
+wait \$!
+_EOF_
+}
+
+function add_games_ecwolf() {
+    _add_games_ecwolf "$md_inst/ecwolf"
 }
 
 function configure_ecwolf() {
-    addPort "$md_id" "ecwolf-spear3d" "ECWolf - Spear3d" "$md_inst/ecwolf --data sdm --file %ROM%"
-    addPort "$md_id" "ecwolf-wolf3d" "ECWolf - Wolf3d" "$md_inst/ecwolf --data wl1 --file %ROM%"
-
     mkRomDir "ports/wolf3d"
 
-    moveConfigDir "$home/.local/share/ecwolf" "$md_conf_root/wolf3d"
-    moveConfigDir "$home/.config/ecwolf" "$romdir/ports/wolf3d"
+    moveConfigDir "$home/.local/share/ecwolf" "$md_conf_root/ecwolf"
+    moveConfigDir "$home/.config/ecwolf" "$md_conf_root/ecwolf"
 
+    # Check if some wolfenstein files are present and upload shareware files
     [[ "$md_mode" == "install" ]] && game_data_ecwolf
+    # Configure present files
+    [[ "$md_mode" == "install" ]] && add_games_ecwolf
+    # Change permission of all files in wolf3d dir to std. user
+    chown -R $user:$user "$romdir/ports/wolf3d"
 }
