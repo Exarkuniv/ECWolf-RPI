@@ -61,7 +61,7 @@ function _add_games_ecwolf(){
         ['sod']="Wolfenstein 3D - Spear of Destiny"
         ['sd1']="Wolfenstein 3D - Spear of Destiny"
         ['sdm']="Wolfenstein 3D - Spear of Destiny (demo)"
-        ['n3d']="Wolfenstein 3D - Super Noahâ€™s Ark 3D"
+        ['n3d']="Wolfenstein 3D - Super Noah's Ark 3D"
         ['sd2']="Wolfenstein 3D - SoD MP2 - Return to Danger"
         ['sd3']="Wolfenstein 3D - SoD MP3 - Ultimate Challenge"
     )
