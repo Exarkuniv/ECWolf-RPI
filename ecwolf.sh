@@ -12,20 +12,23 @@
 rp_module_id="ecwolf"
 rp_module_desc="ECWolf - ECWolf is an advanced source port for Wolfenstein 3D, Spear of Destiny, and Super 3D Noah's Ark based off of the Wolf4SDL code base. It also supports mods from .pk3 files."
 rp_module_licence="GPL2 https://bitbucket.org/ecwolf/ecwolf/raw/5065aaefe055bff5a8bb8396f7f2ca5f2e2cab27/docs/license-gpl.txt"
-rp_module_help="For registered version, replace the shareware files by adding your full Wolf3d 1.4 version game files to $romdir/ports/wolf3d/."
+rp_module_help="For registered versions, replace the shareware files by adding your full Wolf3d, Spear3D 1.4 version game files to $romdir/ports/wolf3d/."
 rp_module_section="exp"
 rp_module_flags=""
 
 function depends_ecwolf() {
-    getDepends g++ make cmake libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev mercurial zlib1g-dev libbz2-dev libjpeg-dev libgtk2.0-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev
+    getDepends libsdl2-dev libsdl2-mixer-dev libsdl2-net-dev zlib1g-dev libsdl1.2-dev libsdl-mixer1.2-dev libsdl-net1.2-dev
 }
 
 function sources_ecwolf() {
-    hg clone https://bitbucket.org/ecwolf/ecwolf
+        downloadAndExtract "https://bitbucket.org/ecwolf/ecwolf/get/5065aaefe055.zip" .
+        mv ecwolf-ecwolf-5065aaefe055 ecwolf
 }
 
 function build_ecwolf() {
     cd ecwolf
+    wget -N -q --show-progress https://raw.githubusercontent.com/crcerror/ECWolf-RPI/master/ecwolf_keyboardpatch.diff
+    patch -p0 -i ecwolf_keyboardpatch.diff
     cmake . -DCMAKE_BUILD_TYPE=Release -DGPL=ON
     make
 }
@@ -38,31 +41,61 @@ function install_ecwolf() {
 }
 
 function game_data_ecwolf() {
-    pushd "$romdir/ports/wolf3d"
-    rename 'y/A-Z/a-z/' *
-    popd
-    if [[ ! -f "$romdir/ports/wolf3d/vswap.wl6" && ! -f "$romdir/ports/wolf3d/vswap.wl1" ]]; then
+    if [[ -z $(ls "$romdir/ports/wolf3d") ]]; then
         cd "$__tmpdir"
-        # Get shareware game data
-        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/wolf3d14.zip" "$romdir/ports/wolf3d" -j -LL
+        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/wolf3d14.zip" "$romdir/ports/wolf3d/shareware"
+        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/soddemo.zip" "$romdir/ports/wolf3d/shareware"
     fi
-    if [[ ! -f "$romdir/ports/wolf3d/vswap.sdm" && ! -f "$romdir/ports/wolf3d/vswap.sod" ]]; then
-        cd "$__tmpdir"
-        # Get shareware game data
-        downloadAndExtract "http://maniacsvault.net/ecwolf/files/shareware/soddemo.zip" "$romdir/ports/wolf3d" -j -LL
-    fi
+}
 
-    chown -R $user:$user "$romdir/ports/wolf3d"
+function _add_games_ecwolf(){
+    local ecw_bin="$1"
+    local ext path game
+
+    declare -A games=(
+        ['wl1']="Wolfenstein 3D (demo)"
+        ['wl6']="Wolfenstein 3D"
+        ['sod']="Wolfenstein 3D - Spear of Destiny"
+        ['sd1']="Wolfenstein 3D - Spear of Destiny"
+        ['sdm']="Wolfenstein 3D - Spear of Destiny (demo)"
+        ['n3d']="Wolfenstein 3D - Super Noah’s Ark 3D"
+        ['sd2']="Wolfenstein 3D - SoD MP2 - Return to Danger"
+        ['sd3']="Wolfenstein 3D - SoD MP3 - Ultimate Challenge"
+    )
+    
+    pushd "$romdir/ports/wolf3d"
+    for game in "${!games[@]}"; do
+        ecw=$(find . -iname "*.$game" -print -quit)
+        [[ -n "$ecw" ]] || continue
+        ext="${ecw##*.}"
+        path="${ecw%/*}"; path="${path#*/}"
+
+        addPort "$md_id" "ecwolf" "${games[$game]}" "pushd $romdir/ports/wolf3d; bash %ROM%; popd" "$romdir/ports/wolf3d/${games[$game]}.ecwolf"
+        _add_ecwolf_files_ecwolf "$romdir/ports/wolf3d/${games[$game]}.ecwolf" "$path" "$ext" "$ecw_bin"
+    done
+    popd
+}
+
+function _add_ecwolf_files_ecwolf() {
+cat >"$1" <<_EOF_
+cd "$2"
+"$4" --data $3
+wait \$!
+_EOF_
+}
+
+function add_games_ecwolf() {
+    _add_games_ecwolf "$md_inst/ecwolf"
 }
 
 function configure_ecwolf() {
-    addPort "$md_id" "ecwolf-spear3d" "ECWolf - Spear3d" "$md_inst/ecwolf --data sdm --file %ROM%"
-    addPort "$md_id" "ecwolf-wolf3d" "ECWolf - Wolf3d" "$md_inst/ecwolf --data wl1 --file %ROM%"
-
     mkRomDir "ports/wolf3d"
 
-    moveConfigDir "$home/.local/share/ecwolf" "$md_conf_root/wolf3d"
-    moveConfigDir "$home/.config/ecwolf" "$romdir/ports/wolf3d"
+    moveConfigDir "$home/.local/share/ecwolf" "$md_conf_root/ecwolf"
+    moveConfigDir "$home/.config/ecwolf" "$md_conf_root/ecwolf"
 
     [[ "$md_mode" == "install" ]] && game_data_ecwolf
+    [[ "$md_mode" == "install" ]] && add_games_ecwolf
+    
+    chown -R $user:$user "$romdir/ports/wolf3d"
 }
