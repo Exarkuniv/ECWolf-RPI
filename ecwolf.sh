@@ -21,8 +21,8 @@ function depends_ecwolf() {
 }
 
 function sources_ecwolf() {
-        downloadAndExtract "https://bitbucket.org/ecwolf/ecwolf/get/5065aaefe055.zip" .
-        mv ecwolf-ecwolf-5065aaefe055 ecwolf
+    downloadAndExtract "https://bitbucket.org/ecwolf/ecwolf/get/5065aaefe055.zip" .
+    mv ecwolf-ecwolf-5065aaefe055 ecwolf
 }
 
 function build_ecwolf() {
@@ -94,6 +94,7 @@ function configure_ecwolf() {
     moveConfigDir "$home/.local/share/ecwolf" "$md_conf_root/ecwolf"
     moveConfigDir "$home/.config/ecwolf" "$md_conf_root/ecwolf"
 
+    # Check if some wolfenstein files are present and upload shareware files
     [[ "$md_mode" == "install" ]] && game_data_ecwolf
     [[ "$md_mode" == "install" ]] && add_games_ecwolf
     
