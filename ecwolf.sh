@@ -27,7 +27,7 @@ function sources_ecwolf() {
 
 function build_ecwolf() {
     cd ecwolf
-    wget -N -q --show-progress https://raw.githubusercontent.com/crcerror/ECWolf-RPI/master/ecwolf_keyboardpatch.diff
+    wget -N -q --show-progress https://raw.githubusercontent.com/tpo1990/ECWolf-RPI/master/ecwolf_keyboardpatch.diff
     patch -p0 -i ecwolf_keyboardpatch.diff
     cmake . -DCMAKE_BUILD_TYPE=Release -DGPL=ON
     make
