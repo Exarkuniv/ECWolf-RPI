@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
-# -- find .pk3 file -- #
-pk3="$(ls *.pk3)"
+# -- find .pk3 files and move into wolf3d roms folder -- #
+for i in *.pk3; do
+   mv "$i" "$HOME/RetroPie/roms/ports/wolf3d"
+   filenames="$filenames $i"
+done
 
 # -- read user input for filename change -- #
 echo What should we call the mod?
@@ -11,12 +14,9 @@ echo renamed mod to $filename
 # -- create .ecwolf file from users input -- #
 cat > "$filename.ecwolf" << EOF
 cd "."
-"/opt/retropie/ports/ecwolf/ecwolf" --data WL6 --file $pk3
+"/opt/retropie/ports/ecwolf/ecwolf" --data WL6 --file $filenames
 wait $!
 EOF
-
-# -- move .pk3 file into wolf3d roms folder -- #
-mv "$pk3" "$HOME/RetroPie/roms/ports/wolf3d"
 
 # -- move .ecwolf file into wolf3d roms folder -- #
 mv "$filename.ecwolf" "$HOME/RetroPie/roms/ports/wolf3d"
