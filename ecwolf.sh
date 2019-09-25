@@ -21,22 +21,22 @@ function depends_ecwolf() {
 }
 
 function sources_ecwolf() {
-    downloadAndExtract "https://bitbucket.org/ecwolf/ecwolf/get/5065aaefe055.zip" .
-    mv ecwolf-ecwolf-5065aaefe055 ecwolf
+    gitPullOrClone "$md_build" "https://bitbucket.org/ecwolf/ecwolf"
 }
 
 function build_ecwolf() {
-    cd ecwolf
+    cd "$md_build"
     wget -N -q https://raw.githubusercontent.com/tpo1990/ECWolf-RPI/master/ecwolf_keyboardpatch.diff
     applyPatch ecwolf_keyboardpatch.diff
     cmake . -DCMAKE_BUILD_TYPE=Release -DGPL=ON
     make
+    md_ret_require="$md_build"
 }
 
 function install_ecwolf() {
     md_ret_files=(
-       'ecwolf/ecwolf'
-       'ecwolf/ecwolf.pk3'
+       'ecwolf'
+       'ecwolf.pk3'
     )
 }
 
